@@ -1,0 +1,45 @@
+name: Windows Build and Cache Berkeley DB
+
+on:
+  # push:
+  # pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    env:
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+    name: Build and Cache Berkeley DB
+    steps:
+
+    - uses: actions/checkout@v5
+
+    - name: Output Env (bash)
+      run: |
+        env | sort
+      shell: bash
+
+    - name: Output Env (cmd)
+      run: |
+        set
+      shell: cmd
+
+    - name: Cache Berkeley DB
+      id: cache-bdb
+      uses: actions/cache@v4
+      with:
+        path: C:\vcpkg\installed\x64-windows
+        key: ${{ runner.os }}-bdb
+
+    - name: Install Berkeley DB
+      if: steps.cache-bdb.outputs.cache-hit != 'true'
+      run: vcpkg install berkeleydb
+
+    - name: Show vcpkg/installed
+      run: |
+        find /c/vcpkg/installed
+      shell: bash

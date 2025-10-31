@@ -1,0 +1,88 @@
+name: Windows build
+
+# NOT WORKING
+
+on:
+  # push:
+  # pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    env:
+      DB_FILE_INCLUDE: C:\vcpkg\installed\x64-windows\include
+      DB_FILE_LIB: C:\vcpkg\installed\x64-windows\bin
+      DB_FILE_NAME: libdb48
+      DB_FILE_COMPAT185: 1
+      VCPKG_DEFAULT_TRIPLET: x64-windows
+
+    strategy:
+      matrix:
+        perl:
+          # - '5.38'
+          - '5.36'
+          # - '5.34'
+          # - '5.32'
+          # - '5.30'
+          # - '5.28'
+          # - '5.26'
+          # - '5.24'
+          # - '5.22'
+          # - '5.20'
+          # - '5.18'
+          # - '5.16'
+          # - '5.14'
+          # - '5.12'
+          # - '5.10'
+          # - '5.8'
+
+    name: Perl ${{ matrix.perl }}
+    steps:
+
+    - uses: actions/checkout@v5
+
+    - name: Setup perl
+      uses: shogo82148/actions-setup-perl@v1
+      with:
+        perl-version: ${{ matrix.perl }}
+
+    - name: Perl version
+      run: perl -V
+
+    - name: Output Env (bash)
+      run: |
+        env | sort
+      shell: bash
+
+    - name: Output Env (cmd)
+      run: |
+        set
+      shell: cmd
+
+    - name: Cache Berkeley DB
+      id: cache-bdb
+      uses: actions/cache@v4
+      with:
+        path: C:\vcpkg\installed\x64-windows
+        key: ${{ runner.os }}-bdb
+
+    - name: Install Berkeley DB
+      if: steps.cache-bdb.outputs.cache-hit != 'true'
+      run: vcpkg install berkeleydb
+
+    - name: Show vcpkg/installed
+      run: |
+        find /c/vcpkg/installed
+      shell: bash
+
+    - name: Install Perl dependencies
+      run: cpanm --quiet --installdeps --notest .
+
+    - name: Build
+      run: perl Makefile.PL && make
+
+    - name: Test
+      run: make test
